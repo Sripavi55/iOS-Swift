@@ -28,7 +28,7 @@ struct DashboardView: View {
 
             ZStack {
 
-                // MARK: Background
+                // Background
 
                 LinearGradient(
                     colors: [
@@ -41,13 +41,13 @@ struct DashboardView: View {
                 )
                 .ignoresSafeArea()
 
-                // MARK: Star Background
+                // Star Background
 
                 StarBackground()
                     .ignoresSafeArea()
                     .allowsHitTesting(false)
 
-                // MARK: Main Scroll View
+                // Main Scroll View
 
                 ScrollView(.vertical, showsIndicators: false) {
 
@@ -91,7 +91,7 @@ struct DashboardView: View {
                                 .foregroundColor(.white.opacity(0.65))
                         }
 
-                        // MARK: Statistics Cards
+                        // Statistics Cards
 
                         HStack(spacing: 15) {
 
@@ -108,7 +108,7 @@ struct DashboardView: View {
                             )
                         }
 
-                        // MARK: Best Night
+                        // Best Night
 
                         VStack(alignment: .leading, spacing: 15) {
 
@@ -176,7 +176,7 @@ struct DashboardView: View {
                                 )
                         }
 
-                        // MARK: Recent Entries Header
+                        // Recent Entries Header
 
                         HStack {
 
@@ -197,7 +197,7 @@ struct DashboardView: View {
                             }
                         }
 
-                        // MARK: Recent Entries List
+                        // Recent Entries List
 
                         if dashboardViewModel.recentEntries.isEmpty {
 
@@ -255,11 +255,9 @@ struct DashboardView: View {
                                             .font(.headline)
                                             .foregroundColor(.white)
 
-                                            Text(
-                                                entry.quality.rawValue.capitalized
-                                            )
-                                            .font(.caption)
-                                            .foregroundColor(purple)
+                                            Text(entry.quality.rawValue.capitalized)
+                                                .font(.caption)
+                                                .foregroundColor(purple)
                                         }
 
                                         Spacer()
@@ -292,7 +290,7 @@ struct DashboardView: View {
                             }
                         }
 
-                        // MARK: Add Sleep Button
+                        // Add Sleep Button
 
                         Button {
 
@@ -334,13 +332,13 @@ struct DashboardView: View {
                             )
                         }
 
-                        // MARK: Weekly Analysis Button
+                        // Weekly Analysis Button
 
                         NavigationLink {
 
-                            WeeklyAnalysisView(
-                                viewModel: sleepViewModel
-                            )
+                            // Corrected navigation
+
+                            WeeklyAnalysisView()
 
                         } label: {
 
@@ -348,7 +346,7 @@ struct DashboardView: View {
 
                                 Image(systemName: "chart.bar.fill")
 
-                                Text("View Weekly Analysis")
+                                Text("View Sleep Analysis")
                                     .fontWeight(.semibold)
                             }
                             .font(.headline)
@@ -407,7 +405,7 @@ struct DashboardView: View {
         .preferredColorScheme(.dark)
     }
 
-    // MARK: Statistics Card
+    // MARK: - Statistics Card
 
     private func statisticCard(
         title: String,
@@ -455,7 +453,7 @@ struct DashboardView: View {
     }
 }
 
-// MARK: Star Background
+// MARK: - Star Background
 
 struct StarBackground: View {
 
@@ -506,4 +504,3 @@ struct StarBackground: View {
 #Preview {
     DashboardView()
 }
-

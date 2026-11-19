@@ -3,11 +3,9 @@ import SwiftUI
 struct AddSleepView: View {
 
     @ObservedObject var viewModel: SleepViewModel
-
     @Environment(\.dismiss) private var dismiss
 
-    @State private var date = Date()
-
+    @State private var sleepDate = Date()
     @State private var bedtime = Calendar.current.date(
         bySettingHour: 23,
         minute: 0,
@@ -22,115 +20,72 @@ struct AddSleepView: View {
         of: Date()
     ) ?? Date()
 
-    @State private var quality: SleepQuality = .good
     @State private var notes = ""
 
     private let purple = Color(
-        red: 0.68,
-        green: 0.32,
-        blue: 1.0
+        red: 0.72,
+        green: 0.20,
+        blue: 0.95
     )
 
-    private let darkPurple = Color(
-        red: 0.10,
-        green: 0.05,
-        blue: 0.20
-    )
+    private var duration: Double {
 
-    // Calculate sleep duration
+        var wakeTime = wakeUpTime
 
-    private var sleepDuration: Double {
-
-        var wake = wakeUpTime
-
-        if wake <= bedtime {
-            wake = Calendar.current.date(
+        if wakeTime <= bedtime {
+            wakeTime = Calendar.current.date(
                 byAdding: .day,
                 value: 1,
-                to: wake
-            ) ?? wake
+                to: wakeUpTime
+            ) ?? wakeUpTime
         }
 
-        return wake.timeIntervalSince(bedtime) / 3600
+        return wakeTime.timeIntervalSince(bedtime) / 3600
     }
 
-    private var formattedDuration: String {
+    private var sleepQuality: SleepQuality {
+        SleepQuality.calculate(duration: duration)
+    }
 
-        let minutes = Int(sleepDuration * 60)
+    private var durationText: String {
 
-        return "\(minutes / 60)h \(minutes % 60)m"
+        let totalMinutes = Int(duration * 60)
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+
+        return "\(hours)h \(minutes)m"
     }
 
     var body: some View {
 
         ZStack {
 
-            // MARK: Background
-
             LinearGradient(
                 colors: [
-                    Color.black,
-                    darkPurple,
-                    Color.black
+                    .black,
+                    Color(red: 0.10, green: 0.03, blue: 0.22),
+                    .black
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
 
-            // MARK: Star Background
-
             StarBackground()
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
 
-            // MARK: Purple Glow
-
-            Circle()
-                .fill(purple.opacity(0.20))
-                .frame(width: 220, height: 220)
-                .blur(radius: 90)
-                .offset(x: 140, y: -300)
-                .allowsHitTesting(false)
-
-            // MARK: Main Content
-
             ScrollView(showsIndicators: false) {
 
-                VStack(alignment: .leading, spacing: 25) {
+                VStack(alignment: .leading, spacing: 22) {
 
-                    // Header
+                    Text("Add Sleep Entry")
+                        .font(.largeTitle.bold())
+                        .foregroundColor(.white)
 
-                    HStack {
-
-                        VStack(alignment: .leading, spacing: 8) {
-
-                            Text("SLEEP DIARY")
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .tracking(3)
-                                .foregroundColor(purple)
-
-                            Text("Add Sleep")
-                                .font(.system(
-                                    size: 30,
-                                    weight: .bold
-                                ))
-                                .foregroundColor(.white)
-
-                            Text("Record your sleeping schedule")
-                                .font(.subheadline)
-                                .foregroundColor(.white.opacity(0.65))
-                        }
-
-                        Spacer()
-
-                        Image(systemName: "moon.stars.fill")
-                            .font(.system(size: 45))
-                            .foregroundColor(purple)
-                            .shadow(color: purple, radius: 15)
-                    }
-                    .padding(.top, 25)
+                    Text("Record your sleeping schedule")
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.65))
 
                     // Sleep Date
 
@@ -156,46 +111,47 @@ struct AddSleepView: View {
 
                     VStack(alignment: .leading, spacing: 12) {
 
-                        Label(
-                            "Sleep Duration",
-                            systemImage: "clock.fill"
-                        )
-                        .font(.headline)
-                        .foregroundColor(.white)
+                        Label("Sleep Duration", systemImage: "clock.fill")
+                            .foregroundColor(.white)
+                            .font(.headline)
 
                         HStack {
 
                             Image(systemName: "moon.zzz.fill")
-                                .font(.system(size: 30))
-                                .foregroundColor(purple)
+                                .font(.title2)
+                                .foregroundColor(.white)
 
                             VStack(alignment: .leading, spacing: 5) {
 
-                                Text(formattedDuration)
-                                    .font(.title2)
-                                    .bold()
+                                Text(durationText)
+                                    .font(.title.bold())
                                     .foregroundColor(.white)
 
                                 Text("Automatically calculated")
                                     .font(.caption)
-                                    .foregroundColor(.white.opacity(0.6))
+                                    .foregroundColor(.white.opacity(0.7))
                             }
 
                             Spacer()
 
                             Image(systemName: "sparkles")
-                                .foregroundColor(purple)
+                                .foregroundColor(.white)
                         }
-                        .padding(18)
-                        .background(purple.opacity(0.15))
-                        .clipShape(RoundedRectangle(cornerRadius: 18))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 18)
-                                .stroke(purple.opacity(0.5), lineWidth: 1)
-                        }
+                        .padding()
+                        .background(
+                            LinearGradient(
+                                colors: [
+                                    purple,
+                                    Color.purple.opacity(0.55)
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(18)
                     }
 
-                    // Sleep Quality
+                    // Automatic Sleep Quality
 
                     VStack(alignment: .leading, spacing: 12) {
 
@@ -203,34 +159,51 @@ struct AddSleepView: View {
                             "Sleep Quality",
                             systemImage: "star.fill"
                         )
-                        .font(.headline)
                         .foregroundColor(.white)
+                        .font(.headline)
 
-                        Picker("Sleep Quality", selection: $quality) {
+                        HStack {
 
-                            ForEach(SleepQuality.allCases, id: \.self) {
-                                item in
+                            VStack(alignment: .leading, spacing: 7) {
 
-                                Text(item.rawValue.capitalized)
-                                    .tag(item)
+                                Text(sleepQuality.displayName)
+                                    .font(.title3.bold())
+                                    .foregroundColor(.white)
+
+                                Text(sleepQuality.recommendation)
+                                    .font(.caption)
+                                    .foregroundColor(.white.opacity(0.75))
                             }
+
+                            Spacer()
+
+                            Image(systemName: "sparkles")
+                                .font(.title2)
+                                .foregroundColor(purple)
                         }
-                        .tint(purple)
-                        .padding(.horizontal, 12)
-                        .background(Color.white.opacity(0.08))
-                        .clipShape(RoundedRectangle(cornerRadius: 15))
+                        .padding()
+                        .background(Color.purple.opacity(0.25))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(
+                                    purple.opacity(0.6),
+                                    lineWidth: 1
+                                )
+                        )
+                        .cornerRadius(16)
+
+                        Text("Sleep quality is automatically estimated from your sleep duration.")
+                            .font(.caption2)
+                            .foregroundColor(.white.opacity(0.55))
                     }
 
                     // Notes
 
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 10) {
 
-                        Label(
-                            "Notes",
-                            systemImage: "note.text"
-                        )
-                        .font(.headline)
-                        .foregroundColor(.white)
+                        Label("Notes", systemImage: "note.text")
+                            .foregroundColor(.white)
+                            .font(.headline)
 
                         TextField(
                             "Caffeine, late screen time, etc.",
@@ -238,17 +211,10 @@ struct AddSleepView: View {
                             axis: .vertical
                         )
                         .lineLimit(3...5)
+                        .padding()
                         .foregroundColor(.white)
-                        .padding(16)
                         .background(Color.white.opacity(0.08))
-                        .clipShape(RoundedRectangle(cornerRadius: 15))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 15)
-                                .stroke(
-                                    purple.opacity(0.4),
-                                    lineWidth: 1
-                                )
-                        }
+                        .cornerRadius(14)
                     }
 
                     // Save Button
@@ -256,10 +222,10 @@ struct AddSleepView: View {
                     Button {
 
                         let entry = SleepEntry(
-                            date: date,
+                            date: sleepDate,
                             bedtime: bedtime,
                             wakeUpTime: wakeUpTime,
-                            quality: quality,
+                            quality: sleepQuality,
                             notes: notes
                         )
 
@@ -269,56 +235,31 @@ struct AddSleepView: View {
 
                     } label: {
 
-                        Label(
-                            "Save Sleep Entry",
-                            systemImage: "checkmark.circle.fill"
-                        )
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(18)
-                        .background(
-                            LinearGradient(
-                                colors: [
-                                    purple,
-                                    Color.purple
-                                ],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                        .shadow(color: purple.opacity(0.4), radius: 12)
-                    }
-
-                    // Cancel Button
-
-                    Button {
-
-                        dismiss()
-
-                    } label: {
-
-                        Text("Cancel")
+                        Text("Save Sleep Entry")
                             .font(.headline)
-                            .foregroundColor(purple)
+                            .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
-                            .padding(18)
-                            .background(Color.white.opacity(0.05))
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(purple, lineWidth: 1)
-                            }
+                            .padding()
+                            .background(
+                                LinearGradient(
+                                    colors: [
+                                        purple,
+                                        Color.purple.opacity(0.65)
+                                    ],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .cornerRadius(16)
                     }
 
-                    Text("Your sleep. Your health. Your journey.")
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.5))
-                        .frame(maxWidth: .infinity)
-                        .padding(.bottom, 30)
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .foregroundColor(.white.opacity(0.7))
+                    .frame(maxWidth: .infinity)
                 }
-                .padding(.horizontal, 22)
+                .padding()
             }
         }
         .preferredColorScheme(.dark)
@@ -328,24 +269,23 @@ struct AddSleepView: View {
 
     private var dateSection: some View {
 
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
 
-            Label(
-                "Sleep Date",
-                systemImage: "calendar"
-            )
-            .font(.headline)
-            .foregroundColor(.white)
+            Label("Sleep Date", systemImage: "calendar")
+                .foregroundColor(.white)
+                .font(.headline)
 
             DatePicker(
                 "Select Date",
-                selection: $date,
+                selection: $sleepDate,
                 displayedComponents: .date
             )
-            .tint(purple)
-            .padding(15)
+            .datePickerStyle(.compact)
+            .tint(.purple)
+            .padding()
             .background(Color.white.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 15))
+            .cornerRadius(14)
+            .foregroundColor(.white)
         }
     }
 
@@ -357,28 +297,23 @@ struct AddSleepView: View {
         selection: Binding<Date>
     ) -> some View {
 
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
 
             Label(title, systemImage: icon)
-                .font(.headline)
                 .foregroundColor(.white)
+                .font(.headline)
 
             DatePicker(
                 title,
                 selection: selection,
                 displayedComponents: .hourAndMinute
             )
-            .tint(purple)
-            .padding(15)
+            .datePickerStyle(.compact)
+            .tint(.purple)
+            .padding()
             .background(Color.white.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 15))
+            .cornerRadius(14)
+            .foregroundColor(.white)
         }
     }
-}
-
-#Preview {
-
-    AddSleepView(
-        viewModel: SleepViewModel()
-    )
 }

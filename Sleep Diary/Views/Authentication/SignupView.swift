@@ -2,6 +2,8 @@ import SwiftUI
 
 struct SignupView: View {
 
+    @ObservedObject var authViewModel: AuthViewModel
+
     @Environment(\.dismiss) private var dismiss
 
     @State private var name = ""
@@ -9,8 +11,9 @@ struct SignupView: View {
     @State private var password = ""
     @State private var confirmPassword = ""
 
-    @State private var message = ""
-    @State private var showMessage = false
+    @State private var showNotification = false
+    @State private var notificationMessage = ""
+    @State private var notificationSuccess = false
 
     private let purple = Color(
         red: 0.68,
@@ -20,7 +23,9 @@ struct SignupView: View {
 
     var body: some View {
 
-        ZStack {
+        ZStack(alignment: .top) {
+
+            // Background
 
             LinearGradient(
                 colors: [
@@ -37,9 +42,13 @@ struct SignupView: View {
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
 
+            // Signup Form
+
             ScrollView(showsIndicators: false) {
 
                 VStack(spacing: 22) {
+
+                    Spacer(minLength: 35)
 
                     Image(systemName: "moon.stars.fill")
                         .font(.system(size: 55))
@@ -47,8 +56,7 @@ struct SignupView: View {
                         .shadow(color: purple, radius: 15)
 
                     Text("Create Account")
-                        .font(.largeTitle)
-                        .bold()
+                        .font(.largeTitle.bold())
                         .foregroundColor(.white)
 
                     Text("Start your better sleep journey")
@@ -58,19 +66,21 @@ struct SignupView: View {
                         title: "Full Name",
                         placeholder: "Enter your name",
                         text: $name,
-                        icon: "person"
+                        icon: "person",
+                        isSecure: false
                     )
 
                     inputField(
                         title: "Email Address",
                         placeholder: "Enter your email",
                         text: $email,
-                        icon: "envelope"
+                        icon: "envelope",
+                        isSecure: false
                     )
 
                     inputField(
                         title: "Password",
-                        placeholder: "Enter password",
+                        placeholder: "Minimum 8 characters",
                         text: $password,
                         icon: "lock",
                         isSecure: true
@@ -78,16 +88,16 @@ struct SignupView: View {
 
                     inputField(
                         title: "Confirm Password",
-                        placeholder: "Confirm password",
+                        placeholder: "Re-enter your password",
                         text: $confirmPassword,
                         icon: "lock.fill",
                         isSecure: true
                     )
 
+                    // Create Account
+
                     Button {
-
                         registerUser()
-
                     } label: {
 
                         Text("CREATE ACCOUNT")
@@ -108,43 +118,90 @@ struct SignupView: View {
                             .clipShape(
                                 RoundedRectangle(cornerRadius: 15)
                             )
+                            .shadow(
+                                color: purple.opacity(0.35),
+                                radius: 12
+                            )
                     }
 
-                    Button {
-                        dismiss()
-                    } label: {
+                    // Login Navigation
 
-                        HStack {
+                    HStack(spacing: 5) {
 
-                            Text("Already have an account?")
-                                .foregroundColor(.white.opacity(0.7))
+                        Text("Already have an account?")
+                            .foregroundColor(.white.opacity(0.7))
 
-                            Text("Login")
-                                .foregroundColor(purple)
-                                .bold()
+                        Button("Login") {
+                            dismiss()
                         }
+                        .foregroundColor(purple)
+                        .bold()
                     }
+                    .font(.subheadline)
+
+                    Text("Your sleep. Your health. Your journey.")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.5))
+                        .padding(.top, 10)
                 }
                 .padding(25)
             }
+
+            // TOP NOTIFICATION
+
+            if showNotification {
+
+                HStack(spacing: 12) {
+
+                    Image(
+                        systemName: notificationSuccess
+                        ? "checkmark.circle.fill"
+                        : "exclamationmark.circle.fill"
+                    )
+                    .font(.title2)
+                    .foregroundColor(
+                        notificationSuccess ? .green : .red
+                    )
+
+                    Text(notificationMessage)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.white)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Spacer(minLength: 0)
+                }
+                .padding()
+                .background(
+                    Color(red: 0.16, green: 0.08, blue: 0.27)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 15))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 15)
+                        .stroke(
+                            purple.opacity(0.7),
+                            lineWidth: 1
+                        )
+                }
+                .shadow(color: purple.opacity(0.3), radius: 12)
+                .padding(.horizontal, 18)
+                .padding(.top, 12)
+                .transition(
+                    .move(edge: .top).combined(with: .opacity)
+                )
+                .zIndex(1)
+            }
         }
         .preferredColorScheme(.dark)
-        .alert("Registration", isPresented: $showMessage) {
-
-            Button("OK", role: .cancel) { }
-
-        } message: {
-
-            Text(message)
-        }
     }
+
+    // MARK: - Input Field
 
     private func inputField(
         title: String,
         placeholder: String,
         text: Binding<String>,
         icon: String,
-        isSecure: Bool = false
+        isSecure: Bool
     ) -> some View {
 
         VStack(alignment: .leading, spacing: 8) {
@@ -170,8 +227,11 @@ struct SignupView: View {
                         .textInputAutocapitalization(
                             title == "Email Address" ? .never : .words
                         )
+                        .autocorrectionDisabled()
                         .keyboardType(
-                            title == "Email Address" ? .emailAddress : .default
+                            title == "Email Address"
+                            ? .emailAddress
+                            : .default
                         )
                 }
             }
@@ -179,54 +239,76 @@ struct SignupView: View {
             .background(Color.white.opacity(0.08))
             .clipShape(RoundedRectangle(cornerRadius: 13))
             .overlay {
+
                 RoundedRectangle(cornerRadius: 13)
-                    .stroke(purple.opacity(0.5), lineWidth: 1)
+                    .stroke(
+                        purple.opacity(0.5),
+                        lineWidth: 1
+                    )
             }
         }
     }
 
+    // MARK: - Registration
+
     private func registerUser() {
 
-        guard !name.isEmpty,
-              !email.isEmpty,
-              !password.isEmpty,
-              !confirmPassword.isEmpty else {
+        let success = authViewModel.signUp(
+            name: name,
+            email: email,
+            password: password,
+            confirmPassword: confirmPassword
+        )
 
-            message = "Please fill in all fields."
-            showMessage = true
-            return
+        if success {
+
+            notificationMessage =
+                "Account created successfully! Please log in."
+
+            notificationSuccess = true
+
+            showTopNotification()
+
+            // Navigate back to Login after 2 seconds
+
+            DispatchQueue.main.asyncAfter(
+                deadline: .now() + 2.0
+            ) {
+                dismiss()
+            }
+
+        } else {
+
+            notificationMessage =
+                authViewModel.errorMessage ?? "Registration failed."
+
+            notificationSuccess = false
+
+            showTopNotification()
+        }
+    }
+
+    // MARK: - Notification Animation
+
+    private func showTopNotification() {
+
+        withAnimation(.spring(response: 0.4)) {
+            showNotification = true
         }
 
-        guard email.contains("@"),
-              email.contains(".") else {
+        if !notificationSuccess {
 
-            message = "Please enter a valid email address."
-            showMessage = true
-            return
+            DispatchQueue.main.asyncAfter(
+                deadline: .now() + 3.0
+            ) {
+                withAnimation {
+                    showNotification = false
+                }
+            }
         }
-
-        guard password.count >= 8 else {
-
-            message = "Password must contain at least 8 characters."
-            showMessage = true
-            return
-        }
-
-        guard password == confirmPassword else {
-
-            message = "Passwords do not match."
-            showMessage = true
-            return
-        }
-
-        // Registration validation completed.
-        // Account storage and authentication will be connected next.
-
-        message = "Registration details are valid!"
-        showMessage = true
     }
 }
 
 #Preview {
-    SignupView()
+    SignupView(authViewModel: AuthViewModel())
 }
